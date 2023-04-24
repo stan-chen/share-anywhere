@@ -21,6 +21,9 @@ async function main() {
   if (!targetTriple) {
     console.error("Failed to determine platform target triple");
   }
+  fs.mkdirSync(`${src_tauri_dir}/binaries`, {
+      recursive: true
+  });
   fs.renameSync(
     `${src_tauri_dir}/target/release/clip-cli`,
     `${src_tauri_dir}/binaries/clip-cli-${targetTriple}`
