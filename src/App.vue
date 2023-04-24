@@ -47,7 +47,7 @@
           <el-row style="margin-top: 12px">
             <el-form label-width="100px">
               <el-form-item label="本机名称">
-                <el-input readonly :model-value="appOptions.name"></el-input>
+                <el-input v-model="appOptions.name"></el-input>
               </el-form-item>
               <el-form-item label="抑制">
                 <el-switch v-model="inhibition" @change="updateInhibition"></el-switch>
@@ -72,13 +72,23 @@
                 </el-select>
               </el-form-item>
               <el-form-item label="组播监听地址">
-                <el-input readonly v-model="appOptions.multicast_address"></el-input>
+                <el-input v-model="appOptions.multicast_address"></el-input>
               </el-form-item>
-              <el-form-item label="API监听地址">
+              <el-form-item label="API监听端口">
                 <el-input
-                  readonly
-                  :model-value="appOptions.interface + ':' + appOptions.http_listen_port"
-                ></el-input>
+                  type="number"
+                  :max="65535"
+                  :min="100"
+                  v-model="appOptions.http_listen_port"
+                >
+                  <template #prepend>
+                    <span v-if="existCerts">https://{{ appOptions.interface }}</span>
+                    <span v-else>http://{{ appOptions.interface }}</span>
+                  </template>
+                  <template #prefix>
+                    <span>:</span>
+                  </template>
+                </el-input>
               </el-form-item>
               <el-form-item label="证书">
                 <el-switch
@@ -91,10 +101,14 @@
                 >
               </el-form-item>
               <el-form-item label="日志文件">
-                <el-input readonly :model-value="appOptions.log.log_file || 'Stderr'"></el-input>
+                <el-input
+                  readonly
+                  v-model="appOptions.log.log_file"
+                  placeholder="Stderr"
+                ></el-input>
               </el-form-item>
               <el-form-item label="日志级别">
-                <el-select readonly :model-value="appOptions.log.log_level || 'info'">
+                <el-select v-model="appOptions.log.log_level" placeholder="INFO">
                   <el-option value="trace" label="TRACE" />
                   <el-option value="debug" label="DEBUG" />
                   <el-option value="info" label="INFO" />
@@ -104,7 +118,8 @@
             </el-form>
           </el-row>
           <el-row justify="center" align="middle">
-            <el-button type="primary">更新并重启</el-button>
+            <el-button type="primary" @click="saveConfig(false)">更新</el-button>
+            <el-button type="primary" @click="saveConfig(true)">更新并重启</el-button>
           </el-row>
         </el-scrollbar>
       </el-tab-pane>
@@ -126,6 +141,14 @@ const isDark = useDark();
 const loading = ref(false);
 const activeName = ref("devices");
 
+interface AppTlsOptions {
+  ca?: string;
+  server_cert?: string;
+  server_key?: string;
+  client_cert?: string;
+  client_key?: string;
+}
+
 interface AppOptions {
   name: string;
   multicast_address: string;
@@ -136,13 +159,7 @@ interface AppOptions {
     log_level?: "trace" | "debug" | "info" | "error";
     log_file?: string;
   };
-  tls: {
-    ca?: string;
-    server_cert?: string;
-    server_key?: string;
-    client_cert?: string;
-    client_key?: string;
-  };
+  tls: AppTlsOptions;
 }
 
 interface Machine {
@@ -179,9 +196,25 @@ const existCerts = computed(() => {
 const generateCert = async () => {
   try {
     loading.value = true;
-    await invoke("create_selfsigned_chains");
+    appOptions.value.tls = await invoke("create_selfsigned_chains");
     ElMessage.success("generate successful");
-    await process.relaunch();
+  } catch (e) {
+    ElMessage.error(`generate failed: ${e}`);
+  } finally {
+    loading.value = false;
+  }
+};
+
+const saveConfig = async (relaunch: boolean) => {
+  try {
+    loading.value = true;
+    await invoke("save_config", {
+      options: appOptions.value
+    });
+    ElMessage.success(`save config to successful`);
+    if (relaunch) {
+      await process.relaunch();
+    }
   } catch (e) {
     ElMessage.error(`generate failed: ${e}`);
   } finally {

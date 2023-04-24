@@ -62,14 +62,19 @@ mod log_level_serialize {
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 struct AppTlsOptions {
   /// tls ca file
+  #[serde(skip_serializing_if = "Option::<B64Data>::is_none", default)]
   ca: Option<B64Data>,
   /// tls server cert file
+  #[serde(skip_serializing_if = "Option::<B64Data>::is_none", default)]
   server_cert: Option<B64Data>,
   /// tls server key file
+  #[serde(skip_serializing_if = "Option::<B64Data>::is_none", default)]
   server_key: Option<B64Data>,
   /// tls client cert file
+  #[serde(skip_serializing_if = "Option::<B64Data>::is_none", default)]
   client_cert: Option<B64Data>,
   /// tls client key file
+  #[serde(skip_serializing_if = "Option::<B64Data>::is_none", default)]
   client_key: Option<B64Data>,
 }
 
@@ -88,11 +93,15 @@ impl AppTlsOptions {
 struct AppLogOptions {
   /// tracing log level
   #[arg(long = "log-level")]
-  #[serde(with = "log_level_serialize", default)]
+  #[serde(
+    with = "log_level_serialize",
+    default,
+    skip_serializing_if = "Option::<log::LevelFilter>::is_none"
+  )]
   log_level: Option<log::LevelFilter>,
   /// tracing log file
   #[arg(long = "log-file")]
-  #[serde(default)]
+  #[serde(default, skip_serializing_if = "Option::<PathBuf>::is_none")]
   log_file: Option<PathBuf>,
 }
 
@@ -121,7 +130,7 @@ struct AppOptions {
   interface: Option<Ipv4Addr>,
   /// broadcaster cipher
   #[arg(skip)]
-  #[serde(default)]
+  #[serde(default, skip_serializing_if = "Option::<String>::is_none")]
   broadcast_cipher: Option<String>,
   /// log options
   #[command(flatten)]
@@ -302,6 +311,7 @@ impl<R: tauri::Runtime> SetupApp for tauri::Builder<R> {
       get_app_config,
       list_network_devices,
       create_selfsigned_chains,
+      save_config,
     ])
   }
 }
@@ -332,16 +342,25 @@ async fn list_network_devices() -> Result<Vec<util::NetworkDevice>, String> {
 }
 
 #[tauri::command]
-async fn create_selfsigned_chains(state: tauri::State<'_, Arc<AppOptions>>) -> Result<(), String> {
+async fn create_selfsigned_chains() -> Result<AppTlsOptions, String> {
   let chains = cert_gen::generate_cert_chain().map_err(|e| e.to_string())?;
-  let mut config = state.as_ref().clone();
-  config.tls.ca = Some(B64Data(chains.ca_cert_bytes));
-  config.tls.server_cert = Some(B64Data(chains.server_cert_bytes));
-  config.tls.server_key = Some(B64Data(chains.server_key_bytes));
-  config.tls.client_cert = Some(B64Data(chains.client_cert_bytes));
-  config.tls.client_key = Some(B64Data(chains.client_key_bytes));
-  config.save_to_config().map_err(|e| e.to_string())?;
-  Ok(())
+  Ok(AppTlsOptions {
+    ca: Some(B64Data(chains.ca_cert_bytes.into())),
+    server_cert: Some(B64Data(chains.server_cert_bytes.into())),
+    server_key: Some(B64Data(chains.server_key_bytes.into())),
+    client_cert: Some(B64Data(chains.client_cert_bytes.into())),
+    client_key: Some(B64Data(chains.client_key_bytes.into())),
+  })
+}
+
+#[tauri::command]
+async fn save_config(
+  mut options: AppOptions,
+  state: tauri::State<'_, Arc<AppOptions>>,
+) -> Result<(), String> {
+  let orig_options = state.as_ref().clone();
+  options.config = orig_options.config;
+  options.save_to_config().map_err(|e| e.to_string())
 }
 
 #[tokio::main]
