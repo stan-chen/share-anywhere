@@ -1,0 +1,22 @@
+@import "./light/css-vars.css";
+@import "./dark/css-vars.css";
+@import "element-plus/theme-chalk/index.css";
+
+html {
+  background-color: var(--el-bg-color);
+  border-radius: 7px;
+  transition: color 0.5s, background-color 0.5s;
+  padding: 10px;
+  font-size: 15px;
+  line-height: 1.6;
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu,
+    Cantarell, "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#app {
+  width: 100%;
+  height: 100%;
+}

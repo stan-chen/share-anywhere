@@ -1,0 +1,44 @@
+[package]
+name = "clipboard"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "clipboard"
+path = "src/lib.rs"
+
+[[bin]]
+name = "clip-cli"
+path = "src/cli.rs"
+required-features = ["command-line"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+image = { version = "0.24.5", features = ["png", "tiff"] }
+serde = { version = "1.0", features = ["derive"] }
+clap = { version = "4", features = ["derive"], optional = true }
+serde_json = { version = "1.0", features = [], optional = true }
+md5 = "0.7"
+
+[target."cfg(target_os = \"linux\")".dependencies.gtk]
+version = "0.15"
+
+[target."cfg(target_os = \"linux\")".dependencies.urlencoding]
+version = "2.1.0"
+
+[target."cfg(target_os = \"macos\")".dependencies.objc]
+version = "0.2.7"
+
+[target."cfg(target_os = \"macos\")".dependencies.objc-foundation]
+version = "0.1.1"
+
+[target."cfg(target_os = \"macos\")".dependencies.objc_id]
+version = "0.1.1"
+
+[target."cfg(target_os = \"windows\")".dependencies.clipboard-win]
+version = "4.4.1"
+
+[features]
+default = []
+command-line = ["clap", "serde_json"]

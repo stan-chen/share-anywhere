@@ -1,0 +1,53 @@
+[package]
+name = "share-anywhere"
+version = "0.1.0"
+description = "Share Anywhere"
+authors = ["Stanley Chen"]
+license = ""
+repository = ""
+edition = "2021"
+rust-version = "1.59"
+
+[workspace]
+members = ["clipboard"]
+exclude = [
+    "binaries",
+    "defaults",
+    "target",
+]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[build-dependencies]
+tauri-build = { version = "1.2", features = [] }
+
+[dependencies]
+serde_json = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+tauri = { version = "1.2", features = ["macos-private-api", "process-command-api", "system-tray"] }
+tauri-plugin-positioner = { version = "1.0.4", features = ["system-tray"] }
+tokio = { version = "1.24", features = ["full"] }
+hyper = { version = "0.14", features = ["full"] }
+hyper-rustls = { version = "0.23", features = ["http2", "http1"] }
+tokio-rustls = { version = "0.23", features = ["default", "dangerous_configuration"] }
+webpki = "0.22"
+rustls-pemfile = "1.0"
+hostname = "0.3.1"
+base64 = "0.13"
+log = "0.4.14"
+env_logger = "0.10"
+rust-crypto = "0.2.36"
+rand = "0.8"
+serde_yaml = "0.9"
+chrono = "0.4.23"
+clap = { version = "4.0.32", features = ["derive"] }
+file-rotate = "0.7"
+pcap = "1"
+clipboard = { path = "./clipboard", features = ["default"] }
+
+[features]
+# by default Tauri runs in production mode
+# when `tauri dev` runs it is executed with `cargo run --no-default-features` if `devPath` is an URL
+default = ["custom-protocol"]
+# this feature is used for production builds where `devPath` points to the filesystem
+# DO NOT remove this
+custom-protocol = ["tauri/custom-protocol"]
